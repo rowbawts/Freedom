@@ -10,11 +10,7 @@ import (
 
 func initGitHubClient() {
 	// Wrap the shared transport for use with the integration ID and authenticating with installation ID.
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-25.private-key.pem")
-	// secret = 57d9b2f565aedc5a5d658b190555ff379701a86c
-
-	// Or for endpoints that require JWT authentication
-	// itr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, 1, "2016-10-19.private-key.pem")
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
 
 	if err != nil {
 		// Handle error.
@@ -43,5 +39,58 @@ func initGitHubClient() {
 }
 
 func listenForWebhook() {
+	fmt.Println("Listening on :3333......")
 
+	http.HandleFunc("/", webhookHandler)
+
+	err := http.ListenAndServe(":3333", nil)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload, err := github.ValidatePayload(r, nil)
+	if err != nil {
+		panic(err)
+	}
+	event, err := github.ParseWebHook(github.WebHookType(r), payload)
+	if err != nil {
+		panic(err)
+	}
+
+	switch event := event.(type) {
+	case *github.PullRequestEvent:
+		processPullRequestEvent(event)
+	case *github.IssueCommentEvent:
+		processIssueCommentEvent(event)
+	}
+}
+
+func processPullRequestEvent(event *github.PullRequestEvent) {
+	fmt.Println(event.PullRequest.Comments)
+}
+
+func processIssueCommentEvent(event *github.IssueCommentEvent) {
+	fmt.Println(event)
+	// Wrap the shared transport for use with the integration ID and authenticating with installation ID.
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
+
+	if err != nil {
+		// Handle error.
+	}
+
+	// Use installation transport with client.
+	client := github.NewClient(&http.Client{Transport: itr})
+
+	ctx := context.Background()
+
+	s := "test from bot"
+
+	comment := github.IssueComment{
+		Body: &s,
+	}
+
+	client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetName(), event.GetRepo().GetName(), event.GetIssue().GetNumber(), &comment)
 }
