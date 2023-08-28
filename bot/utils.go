@@ -5,24 +5,19 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v54/github"
 	"golang.org/x/net/context"
+	"log"
 	"net/http"
+	"strings"
 )
 
+// Wrap the shared transport for use with the integration ID and authenticating with installation ID.
+var itr, err = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
+
+// Use installation transport with client.
+var client = github.NewClient(&http.Client{Transport: itr})
+var ctx = context.Background()
+
 func initGitHubClient() {
-	// Wrap the shared transport for use with the integration ID and authenticating with installation ID.
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
-
-	if err != nil {
-		// Handle error.
-	}
-
-	// Use installation transport with client.
-	client := github.NewClient(&http.Client{Transport: itr})
-
-	// Use client...
-	//client.PullRequests.CreateComment(ctx, "rowbawts", "theopenestsource", 1, comment)
-	ctx := context.Background()
-
 	readme, _, err := client.Repositories.GetReadme(ctx, "rowbawts", "theopenestsource", nil)
 	if err != nil {
 		fmt.Println(err)
@@ -61,36 +56,79 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch event := event.(type) {
+	case *github.IssuesEvent:
+		processIssuesEvent(event)
+		break
 	case *github.PullRequestEvent:
 		processPullRequestEvent(event)
-	case *github.IssueCommentEvent:
-		processIssueCommentEvent(event)
+		break
+	case *github.PullRequestReviewCommentEvent:
+		processPullRequestReviewCommentEvent(event)
+		break
+	}
+}
+
+func processIssuesEvent(event *github.IssuesEvent) {
+	if event.GetAction() == "opened" {
+		// Respond with a comment
+		comment := &github.IssueComment{
+			Body: github.String("Thanks for opening this issue!"),
+		}
+
+		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetIssue().GetNumber(), comment)
+		if err != nil {
+			log.Println("Error creating comment:", err)
+		}
 	}
 }
 
 func processPullRequestEvent(event *github.PullRequestEvent) {
-	fmt.Println(event.PullRequest.Comments)
+	if event.GetAction() == "opened" {
+		// Respond with a comment
+		comment := &github.IssueComment{
+			Body: github.String("React to this comment with +1 to vote for getting it merged!"),
+		}
+
+		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
+		if err != nil {
+			log.Println("Error creating comment:", err)
+		}
+	}
+
+	if event.GetAction() == "reaction" {
+
+	}
 }
 
-func processIssueCommentEvent(event *github.IssueCommentEvent) {
-	fmt.Println(event)
-	// Wrap the shared transport for use with the integration ID and authenticating with installation ID.
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
+func processPullRequestReviewCommentEvent(event *github.PullRequestReviewCommentEvent) {
+	if strings.HasPrefix(event.GetAction(), "created") {
+		// Get the pull request details
+		owner := event.GetRepo().GetOwner().GetLogin()
+		repo := event.GetRepo().GetName()
+		prNumber := event.GetPullRequest().GetNumber()
 
-	if err != nil {
-		// Handle error.
+		// Fetch the reactions for the comment
+		reactions, _, err := client.Reactions.ListIssueCommentReactions(context.Background(), owner, repo, event.GetComment().GetID(), nil)
+		if err != nil {
+			log.Println("Error fetching reactions:", err)
+			return
+		}
+
+		// Check if there are thumbs up (:+1:) reactions
+		for _, reaction := range reactions {
+			if *reaction.Content == "+1" {
+				// Merge the pull request
+				merge := &github.PullRequestOptions{
+					MergeMethod: "merge", // Change this as needed
+				}
+				_, _, err := client.PullRequests.Merge(context.Background(), owner, repo, prNumber, "Merging based on reactions", merge)
+				if err != nil {
+					log.Println("Error merging pull request:", err)
+				} else {
+					log.Println("Pull request merged successfully")
+				}
+				return
+			}
+		}
 	}
-
-	// Use installation transport with client.
-	client := github.NewClient(&http.Client{Transport: itr})
-
-	ctx := context.Background()
-
-	s := "test from bot"
-
-	comment := github.IssueComment{
-		Body: &s,
-	}
-
-	client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetName(), event.GetRepo().GetName(), event.GetIssue().GetNumber(), &comment)
 }
