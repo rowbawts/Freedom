@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 	"log"
 	"net/http"
-	"strings"
 )
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
@@ -61,11 +60,11 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	case *github.IssuesEvent:
 		processIssuesEvent(event)
 		break
+	case *github.IssueCommentEvent:
+		processIssueCommentEvent(event)
+		break
 	case *github.PullRequestEvent:
 		processPullRequestEvent(event)
-		break
-	case *github.PullRequestReviewCommentEvent:
-		processPullRequestReviewCommentEvent(event)
 		break
 	default:
 		fmt.Println("Unhandled Event!")
@@ -87,29 +86,13 @@ func processIssuesEvent(event *github.IssuesEvent) {
 	}
 }
 
-func processPullRequestEvent(event *github.PullRequestEvent) {
-	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
-		// Respond with a comment
-		comment := &github.IssueComment{
-			Body: github.String("React to this comment with :+1: to vote for getting it merged!"),
-		}
+func processIssueCommentEvent(event *github.IssueCommentEvent) {
+	owner := event.GetRepo().GetOwner().GetLogin()
+	repo := event.GetRepo().GetName()
+	prNumber := event.GetIssue().GetNumber()
 
-		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
-		if err != nil {
-			log.Println("Error creating comment:", err)
-		}
-	}
-}
-
-func processPullRequestReviewCommentEvent(event *github.PullRequestReviewCommentEvent) {
-	if strings.HasPrefix(event.GetAction(), "created") {
-		// Get the pull request details
-		owner := event.GetRepo().GetOwner().GetLogin()
-		repo := event.GetRepo().GetName()
-		prNumber := event.GetPullRequest().GetNumber()
-
-		// Fetch the reactions for the comment
-		reactions, _, err := client.Reactions.ListIssueCommentReactions(context.Background(), owner, repo, event.GetComment().GetID(), nil)
+	if event.GetIssue().IsPullRequest() {
+		reactions, _, err := client.Reactions.ListIssueCommentReactions(ctx, owner, repo, event.GetComment().GetID(), nil)
 		if err != nil {
 			log.Println("Error fetching reactions:", err)
 			return
@@ -122,7 +105,7 @@ func processPullRequestReviewCommentEvent(event *github.PullRequestReviewComment
 				merge := &github.PullRequestOptions{
 					MergeMethod: "merge", // Change this as needed
 				}
-				_, _, err := client.PullRequests.Merge(context.Background(), owner, repo, prNumber, "Merging based on reactions", merge)
+				_, _, err := client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
 				if err != nil {
 					log.Println("Error merging pull request:", err)
 				} else {
@@ -130,6 +113,20 @@ func processPullRequestReviewCommentEvent(event *github.PullRequestReviewComment
 				}
 				return
 			}
+		}
+	}
+}
+
+func processPullRequestEvent(event *github.PullRequestEvent) {
+	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
+		// Respond with a comment
+		comment := &github.IssueComment{
+			Body: github.String("React to this comment with :+1: to vote for getting it merged!"),
+		}
+
+		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
+		if err != nil {
+			log.Println("Error creating comment:", err)
 		}
 	}
 }
