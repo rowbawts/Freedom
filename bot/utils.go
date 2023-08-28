@@ -51,7 +51,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		processIssuesEvent(event)
 		break
 	case *github.IssueCommentEvent:
-		if event.GetComment().GetUser().GetLogin() != "openest-source-bot[bot]" {
+		if !strings.Contains(event.GetComment().GetUser().GetLogin(), "bot") {
 			processIssueCommentEvent(event)
 			break
 		}
@@ -101,10 +101,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
-			if strings.Contains(comment.GetBody(), "+1") {
+			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
 				reactionCount++
-
-				fmt.Println(comment.GetBody())
 
 				if reactionCount >= reactionCountGoal {
 					// Merge the pull request
