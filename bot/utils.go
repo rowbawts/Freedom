@@ -104,6 +104,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			if strings.Contains(comment.GetBody(), "+1") {
 				reactionCount++
 
+				fmt.Println(comment.GetBody())
+
 				if reactionCount >= reactionCountGoal {
 					// Merge the pull request
 					merge := &github.PullRequestOptions{
@@ -114,7 +116,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 					if err != nil {
 						log.Println("Error merging pull request:", err)
 					} else {
-						log.Println("Pull request merged successfully")
+						log.Println("Pull request", prNumber, "merged successfully")
 					}
 
 					return
