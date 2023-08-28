@@ -113,7 +113,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
-			if comment.GetBody() == "+1" || comment.GetBody() == ":+1:" || comment.GetBody() == ":+1: " {
+			if strings.Contains(comment.GetBody(), "+1") {
 				reactionCount++
 
 				if reactionCount >= reactionCountGoal {
