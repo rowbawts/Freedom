@@ -102,6 +102,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
+				fmt.Println(comment.GetUser().GetLogin())
+				return
 				reactionCount++
 
 				if reactionCount >= reactionCountGoal {
@@ -114,7 +116,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 					if err != nil {
 						log.Println("Error merging pull request:", err)
 					} else {
-						log.Println("Pull request", prNumber, "merged successfully")
+						log.Println("Pull request #", prNumber, "merged successfully")
 					}
 
 					return
