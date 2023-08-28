@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
@@ -38,7 +39,6 @@ func listenForWebhook() {
 	http.HandleFunc("/", webhookHandler)
 
 	err := http.ListenAndServe(":3333", nil)
-
 	if err != nil {
 		panic(err)
 	}
@@ -49,6 +49,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
 		panic(err)
@@ -73,13 +74,19 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func processIssuesEvent(event *github.IssuesEvent) {
+	owner := event.GetRepo().GetOwner().GetLogin()
+	repo := event.GetRepo().GetName()
+	issueNumber := event.GetIssue().GetNumber()
+
 	if event.GetAction() == "opened" {
+		commentText := "Thanks for opening this issue!"
+
 		// Respond with a comment
 		comment := &github.IssueComment{
-			Body: github.String("Thanks for opening this issue!"),
+			Body: github.String(commentText),
 		}
 
-		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetIssue().GetNumber(), comment)
+		_, _, err := client.Issues.CreateComment(ctx, owner, repo, issueNumber, comment)
 		if err != nil {
 			log.Println("Error creating comment:", err)
 		}
@@ -91,9 +98,12 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	repo := event.GetRepo().GetName()
 	prNumber := event.GetIssue().GetNumber()
 	reactionCount := 0
+	reactionCountGoal := 2
+
+	fmt.Println("Owner:", owner, "Repo:", repo, "PR Number:", prNumber)
 
 	if event.GetIssue().IsPullRequest() {
-		comments, _, err := client.PullRequests.ListComments(ctx, owner, repo, prNumber, nil)
+		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
 		if err != nil {
 			log.Println("Error fetching reactions:", err)
 			return
@@ -101,10 +111,10 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
-			if *comment.Body == "+1" {
+			if comment.GetBody() == "+1" || comment.GetBody() == ":+1:" || comment.GetBody() == ":+1: " {
 				reactionCount++
 
-				if reactionCount >= 1 {
+				if reactionCount >= reactionCountGoal {
 					// Merge the pull request
 					merge := &github.PullRequestOptions{
 						MergeMethod: "merge", // Change this as needed
@@ -117,8 +127,21 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 						log.Println("Pull request merged successfully")
 					}
 
-					reactionCount = 0
 					return
+				} else {
+					commentText := "Current thumbs up count: (#{reactionCount}) need (#{reactionRemainingCount}) more to merge."
+					commentText = strings.Replace(commentText, "(#{reactionCount})", string(reactionCount), 1)
+					commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", string(reactionCountGoal-reactionCount), 1)
+
+					// Respond with a comment
+					comment := &github.IssueComment{
+						Body: github.String(commentText),
+					}
+
+					_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+					if err != nil {
+						log.Println("Error creating comment:", err)
+					}
 				}
 			}
 		}
@@ -129,7 +152,7 @@ func processPullRequestEvent(event *github.PullRequestEvent) {
 	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
 		// Respond with a comment
 		comment := &github.IssueComment{
-			Body: github.String("React to this comment with :+1: to vote for getting it merged!"),
+			Body: github.String("React to this PR with :+1: to vote for getting it merged!"),
 		}
 
 		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
