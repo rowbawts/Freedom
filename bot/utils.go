@@ -19,23 +19,11 @@ var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
 
 func initGitHubClient() {
-	readme, _, err := client.Repositories.GetReadme(ctx, "rowbawts", "theopenestsource", nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	content, err := readme.GetContent()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(content)
+	log.Println("Initializing......")
 }
 
 func listenForWebhook() {
-	fmt.Println("Listening on :3333......")
+	log.Println("Listening on :3333......")
 
 	http.HandleFunc("/", webhookHandler)
 
