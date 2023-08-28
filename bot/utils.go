@@ -90,28 +90,36 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	owner := event.GetRepo().GetOwner().GetLogin()
 	repo := event.GetRepo().GetName()
 	prNumber := event.GetIssue().GetNumber()
+	reactionCount := 0
 
 	if event.GetIssue().IsPullRequest() {
-		reactions, _, err := client.Reactions.ListIssueCommentReactions(ctx, owner, repo, event.GetComment().GetID(), nil)
+		comments, _, err := client.PullRequests.ListComments(ctx, owner, repo, prNumber, nil)
 		if err != nil {
 			log.Println("Error fetching reactions:", err)
 			return
 		}
 
 		// Check if there are thumbs up (:+1:) reactions
-		for _, reaction := range reactions {
-			if *reaction.Content == "+1" {
-				// Merge the pull request
-				merge := &github.PullRequestOptions{
-					MergeMethod: "merge", // Change this as needed
+		for _, comment := range comments {
+			if *comment.Body == "+1" {
+				reactionCount++
+
+				if reactionCount >= 1 {
+					// Merge the pull request
+					merge := &github.PullRequestOptions{
+						MergeMethod: "merge", // Change this as needed
+					}
+
+					_, _, err := client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
+					if err != nil {
+						log.Println("Error merging pull request:", err)
+					} else {
+						log.Println("Pull request merged successfully")
+					}
+
+					reactionCount = 0
+					return
 				}
-				_, _, err := client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
-				if err != nil {
-					log.Println("Error merging pull request:", err)
-				} else {
-					log.Println("Pull request merged successfully")
-				}
-				return
 			}
 		}
 	}
