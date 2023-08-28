@@ -103,38 +103,47 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		for _, comment := range comments {
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
 				fmt.Println(comment.GetUser().GetLogin())
-				return
 				reactionCount++
+			}
+		}
 
-				if reactionCount >= reactionCountGoal {
-					// Merge the pull request
-					merge := &github.PullRequestOptions{
-						MergeMethod: "merge", // Change this as needed
-					}
+		if reactionCount >= reactionCountGoal {
+			// Merge the pull request
+			merge := &github.PullRequestOptions{
+				MergeMethod: "merge", // Change this as needed
+			}
 
-					_, _, err := client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
-					if err != nil {
-						log.Println("Error merging pull request:", err)
-					} else {
-						log.Println("Pull request #", prNumber, "merged successfully")
-					}
+			// Respond with a comment
+			comment := &github.IssueComment{
+				Body: github.String("Merging based on reactions :fireworks:"),
+			}
 
-					return
-				} else {
-					commentText := "Current :+1: count is (#{reactionCount}) need (#{reactionRemainingCount}) more to merge"
-					commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
-					commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
+			_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+			if err != nil {
+				log.Println("Error creating comment:", err)
+			}
 
-					// Respond with a comment
-					comment := &github.IssueComment{
-						Body: github.String(commentText),
-					}
+			_, _, err = client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
+			if err != nil {
+				log.Println("Error merging pull request:", err)
+			} else {
+				log.Println("Pull request #", prNumber, "merged successfully")
+			}
 
-					_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
-					if err != nil {
-						log.Println("Error creating comment:", err)
-					}
-				}
+			return
+		} else {
+			commentText := "Current :+1: count is (#{reactionCount}) need (#{reactionRemainingCount}) more to merge"
+			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
+			commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
+
+			// Respond with a comment
+			comment := &github.IssueComment{
+				Body: github.String(commentText),
+			}
+
+			_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+			if err != nil {
+				log.Println("Error creating comment:", err)
 			}
 		}
 	}
