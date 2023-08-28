@@ -91,6 +91,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	prNumber := event.GetIssue().GetNumber()
 	reactionCount := 0
 	reactionCountGoal := 5
+	approvers := []string{}
 
 	if event.GetIssue().IsPullRequest() {
 		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
@@ -102,7 +103,22 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
-				reactionCount++
+				for _, name := range approvers {
+					if !strings.Contains(name, comment.GetUser().GetLogin()) {
+						reactionCount++
+						approvers = append(approvers, comment.GetUser().GetLogin())
+					} else {
+						// Respond with a comment
+						comment := &github.IssueComment{
+							Body: github.String("You've already voted!"),
+						}
+
+						_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+						if err != nil {
+							log.Println("Error creating comment:", err)
+						}
+					}
+				}
 			}
 		}
 
