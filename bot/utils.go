@@ -11,7 +11,7 @@ import (
 )
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
-var itr, err = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
+var itr, _ = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
 
 // Use installation transport with client.
 var client = github.NewClient(&http.Client{Transport: itr})
@@ -55,6 +55,8 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	w.WriteHeader(200)
+
 	switch event := event.(type) {
 	case *github.IssuesEvent:
 		processIssuesEvent(event)
@@ -64,6 +66,9 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		break
 	case *github.PullRequestReviewCommentEvent:
 		processPullRequestReviewCommentEvent(event)
+		break
+	default:
+		fmt.Println("Unhandled Event!")
 		break
 	}
 }
@@ -83,20 +88,16 @@ func processIssuesEvent(event *github.IssuesEvent) {
 }
 
 func processPullRequestEvent(event *github.PullRequestEvent) {
-	if event.GetAction() == "opened" {
+	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
 		// Respond with a comment
 		comment := &github.IssueComment{
-			Body: github.String("React to this comment with +1 to vote for getting it merged!"),
+			Body: github.String("React to this comment with :+1: to vote for getting it merged!"),
 		}
 
 		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
 		if err != nil {
 			log.Println("Error creating comment:", err)
 		}
-	}
-
-	if event.GetAction() == "reaction" {
-
 	}
 }
 
