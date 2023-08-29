@@ -140,7 +140,10 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(commentAuthor, "bot") {
 				value, exists := approvals[prNumber]
-				if !(exists && strings.Contains(value, commentAuthor)) {
+				if exists && !strings.Contains(value, commentAuthor) {
+					reactionCount++
+					approvals[prNumber] = commentAuthor
+				} else if !exists {
 					reactionCount++
 					approvals[prNumber] = commentAuthor
 				} else {
