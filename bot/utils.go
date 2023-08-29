@@ -44,7 +44,12 @@ func listenForWebhook() {
 }
 
 func webHandle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Turn back!")
+	_, err := fmt.Fprintf(w, "Turn back!")
+	if err != nil {
+		return
+	}
+
+	log.Println("Request received to / endpoint:", r)
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,21 +63,26 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	w.WriteHeader(200)
+
 	switch event := event.(type) {
 	case *github.IssuesEvent:
+		log.Println("Received Issues Event: processing now!")
 		processIssuesEvent(event)
 		break
 	case *github.IssueCommentEvent:
 		if !strings.Contains(event.GetComment().GetUser().GetLogin(), "bot") {
+			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
 		}
 		break
 	case *github.PullRequestEvent:
+		log.Println("Received Pull Request Event: processing now!")
 		processPullRequestEvent(event)
 		break
 	default:
-		fmt.Println("Unhandled Event!")
+		log.Println("Received Unhandled Event!")
 		break
 	}
 }
@@ -143,7 +153,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			return
 		} else {
-			commentText := "Votes: (#{reactionCount})/(#{reactionRemainingCount})"
+			commentText := "Votes: (#{reactionCount}) Needed: (#{reactionRemainingCount})"
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
 			commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
 
