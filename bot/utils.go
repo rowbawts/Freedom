@@ -25,7 +25,7 @@ func initGitHubClient() {
 func listenForWebhook() {
 	log.Println("Listening on :3333......")
 
-	http.HandleFunc("/", new wr)
+	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
 
 	err := http.ListenAndServe(":3333", nil)
