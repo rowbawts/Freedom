@@ -23,7 +23,7 @@ func initGitHubClient() {
 }
 
 func listenForWebhook() {
-	log.Println("Listening on :3333......")
+	log.Println("Listening on :433......")
 
 	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
