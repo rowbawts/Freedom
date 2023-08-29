@@ -27,13 +27,20 @@ func initGitHubClient() {
 	if privateKey != "" {
 		log.Println("Private key loaded from env!")
 	} else {
-		log.Println("Private key not found!")
+		log.Println("No private key specified in env!")
+		os.Exit(0)
+	}
+
+	if port != "" {
+		log.Println("Port configured from env!")
+	} else {
+		log.Println("No port specified in env!")
 		os.Exit(0)
 	}
 }
 
 func listenForWebhook() {
-	log.Printf("Listening on :%d......\n", port)
+	log.Printf("Listening on :%s......\n", port)
 
 	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
