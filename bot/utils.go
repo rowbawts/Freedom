@@ -153,7 +153,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			return
 		} else {
-			commentText := "Votes: (#{reactionCount})/(#{reactionRemainingCount})"
+			commentText := "Votes: (#{reactionCount}) Needed: (#{reactionRemainingCount})"
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
 			commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
 
