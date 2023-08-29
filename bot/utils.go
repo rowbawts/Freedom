@@ -106,7 +106,7 @@ func processIssuesEvent(event *github.IssuesEvent) {
 	issueNumber := event.GetIssue().GetNumber()
 
 	if event.GetAction() == "opened" {
-		commentText := "Thanks for opening this issue!"
+		commentText := "Thanks for opening this issue! Someone will be responding soon! :smile:"
 
 		// Respond with a comment
 		comment := &github.IssueComment{
@@ -159,6 +159,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 				}
 			}
 		}
+
+		log.Println(approvals)
 
 		if reactionCount >= reactionCountGoal {
 			// Merge the pull request
