@@ -136,7 +136,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			// Respond with a comment
 			comment := &github.IssueComment{
-				Body: github.String("Merging based on reactions :fireworks:"),
+				Body: github.String("Merging based on reactions :heavy_check_mark: :rocket:"),
 			}
 
 			_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
