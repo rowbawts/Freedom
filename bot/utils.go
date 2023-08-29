@@ -22,7 +22,6 @@ var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(
 // Use installation transport with client.
 var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
-var approvals map[int]string
 
 func initGitHubClient() {
 	log.Println("Initializing......")
@@ -106,7 +105,7 @@ func processIssuesEvent(event *github.IssuesEvent) {
 	issueNumber := event.GetIssue().GetNumber()
 
 	if event.GetAction() == "opened" {
-		commentText := "Thanks for opening this issue!"
+		commentText := "Thanks for opening this issue! Someone will be responding soon! :smile:"
 
 		// Respond with a comment
 		comment := &github.IssueComment{
@@ -126,6 +125,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	prNumber := event.GetIssue().GetNumber()
 	reactionCount := 0
 	reactionCountGoal := 5
+	approvals := map[int]string{}
 
 	if event.GetIssue().IsPullRequest() {
 		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
@@ -159,6 +159,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 				}
 			}
 		}
+
+		log.Println(approvals)
 
 		if reactionCount >= reactionCountGoal {
 			// Merge the pull request
