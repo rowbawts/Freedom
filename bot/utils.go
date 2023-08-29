@@ -147,20 +147,23 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 					reactionCount++
 					approvals[prNumber] = commentAuthor
 				} else {
+					commentText := "@(#{commentAuthor}) your vote has already been counted :x:"
+					commentText = strings.Replace(commentText, "(#{commentAuthor})", commentAuthor, 1)
+
 					// Respond with a comment
 					comment := &github.IssueComment{
-						Body: github.String("Your vote has already been counted :x:"),
+						Body: github.String(commentText),
 					}
 
 					_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
 					if err != nil {
 						log.Println("Error creating comment:", err)
 					}
+
+					return
 				}
 			}
 		}
-
-		log.Println(approvals)
 
 		if reactionCount >= reactionCountGoal {
 			// Merge the pull request
