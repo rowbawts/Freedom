@@ -7,12 +7,14 @@ import (
 	"golang.org/x/net/context"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
-var itr, _ = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, "theopenestsource.2023-08-26.private-key.pem")
+var privateKey = os.Getenv("privateKey")
+var itr, _ = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, privateKey)
 
 // Use installation transport with client.
 var client = github.NewClient(&http.Client{Transport: itr})
@@ -20,6 +22,13 @@ var ctx = context.Background()
 
 func initGitHubClient() {
 	log.Println("Initializing......")
+
+	if privateKey != "" {
+		log.Println(privateKey)
+	} else {
+		log.Println("Private key not found!")
+		os.Exit(0)
+	}
 }
 
 func listenForWebhook() {
