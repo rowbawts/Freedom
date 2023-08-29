@@ -136,7 +136,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			// Respond with a comment
 			comment := &github.IssueComment{
-				Body: github.String("Merging based on reactions :fireworks:"),
+				Body: github.String("Merging based on reactions :heavy_check_mark: :rocket:"),
 			}
 
 			_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
@@ -153,9 +153,9 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			return
 		} else {
-			commentText := "Votes: (#{reactionCount}) Needed: (#{reactionRemainingCount})"
+			commentText := "Votes: (#{reactionCount})/(#{reactionCountGoal})"
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
-			commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
+			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
 
 			// Respond with a comment
 			comment := &github.IssueComment{
