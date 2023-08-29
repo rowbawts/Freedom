@@ -22,6 +22,7 @@ var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(
 // Use installation transport with client.
 var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
+var approvals map[int]string
 
 func initGitHubClient() {
 	log.Println("Initializing......")
@@ -136,7 +137,21 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
-				reactionCount++
+				value, exists := approvals[prNumber]
+				if !(exists && strings.Contains(value, comment.GetUser().GetLogin())) {
+					reactionCount++
+					approvals[prNumber] = comment.GetUser().GetLogin()
+				} else {
+					// Respond with a comment
+					comment := &github.IssueComment{
+						Body: github.String("Your vote has already been counted :x:"),
+					}
+
+					_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+					if err != nil {
+						log.Println("Error creating comment:", err)
+					}
+				}
 			}
 		}
 
