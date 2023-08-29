@@ -14,6 +14,7 @@ import (
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
 var privateKey = os.Getenv("privateKey")
+var port = os.Getenv("port")
 var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(privateKey))
 
 // Use installation transport with client.
@@ -32,12 +33,12 @@ func initGitHubClient() {
 }
 
 func listenForWebhook() {
-	log.Println("Listening on :433......")
+	log.Printf("Listening on :%d......\n", port)
 
 	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
 
-	err := http.ListenAndServe(":433", nil)
+	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		panic(err)
 	}
