@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-github/v54/github"
 	"golang.org/x/net/context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
 var privateKey = os.Getenv("privateKey")
+var host = os.Getenv("host")
 var port = os.Getenv("port")
 var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(privateKey))
 
@@ -45,7 +47,9 @@ func listenForWebhook() {
 	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
 
-	err := http.ListenAndServe(port, nil)
+	address := net.JoinHostPort(host, port)
+
+	err := http.ListenAndServe(address, nil)
 	if err != nil {
 		panic(err)
 	}
