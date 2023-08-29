@@ -49,8 +49,6 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	w.WriteHeader(200)
-
 	switch event := event.(type) {
 	case *github.IssuesEvent:
 		processIssuesEvent(event)
