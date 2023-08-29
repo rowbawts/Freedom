@@ -90,7 +90,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	repo := event.GetRepo().GetName()
 	prNumber := event.GetIssue().GetNumber()
 	reactionCount := 0
-	reactionCountGoal := 2
+	reactionCountGoal := 5
 
 	if event.GetIssue().IsPullRequest() {
 		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
@@ -102,7 +102,6 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
 			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
-				fmt.Println(comment.GetUser().GetLogin())
 				reactionCount++
 			}
 		}
@@ -132,7 +131,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 			return
 		} else {
-			commentText := "Current :+1: count is (#{reactionCount}) need (#{reactionRemainingCount}) more to merge"
+			commentText := "Votes: (#{reactionCount})/(#{reactionRemainingCount})"
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
 			commentText = strings.Replace(commentText, "(#{reactionRemainingCount})", strconv.Itoa(reactionCountGoal-reactionCount), 1)
 
