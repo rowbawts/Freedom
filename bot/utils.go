@@ -160,8 +160,6 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			}
 		}
 
-		log.Println(approvals)
-
 		if reactionCount >= reactionCountGoal {
 			// Merge the pull request
 			merge := &github.PullRequestOptions{
