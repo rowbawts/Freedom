@@ -136,11 +136,13 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
-			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(comment.GetUser().GetLogin(), "bot") {
+			commentAuthor := comment.GetUser().GetLogin()
+
+			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(commentAuthor, "bot") {
 				value, exists := approvals[prNumber]
-				if !(exists && strings.Contains(value, comment.GetUser().GetLogin())) {
+				if !(exists && strings.Contains(value, commentAuthor)) {
 					reactionCount++
-					approvals[prNumber] = comment.GetUser().GetLogin()
+					approvals[prNumber] = commentAuthor
 				} else {
 					// Respond with a comment
 					comment := &github.IssueComment{
