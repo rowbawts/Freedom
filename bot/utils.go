@@ -156,6 +156,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 					if err != nil {
 						log.Println("Error creating comment:", err)
 					}
+
+					return
 				}
 			}
 		}
