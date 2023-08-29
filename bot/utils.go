@@ -28,7 +28,7 @@ func listenForWebhook() {
 	http.HandleFunc("/", webHandle)
 	http.HandleFunc("/webhook", webhookHandler)
 
-	err := http.ListenAndServe(":3333", nil)
+	err := http.ListenAndServe(":433", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -48,8 +48,6 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
-	w.WriteHeader(200)
 
 	switch event := event.(type) {
 	case *github.IssuesEvent:
