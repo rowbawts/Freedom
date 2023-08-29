@@ -24,7 +24,7 @@ func initGitHubClient() {
 	log.Println("Initializing......")
 
 	if privateKey != "" {
-		log.Println(privateKey)
+		log.Println("Private key loaded from env")
 	} else {
 		log.Println("Private key not found!")
 		os.Exit(0)
