@@ -14,7 +14,7 @@ import (
 
 // Wrap the shared transport for use with the integration ID and authenticating with installation ID.
 var privateKey = os.Getenv("privateKey")
-var itr, _ = ghinstallation.NewKeyFromFile(http.DefaultTransport, 381312, 41105280, privateKey)
+var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(privateKey))
 
 // Use installation transport with client.
 var client = github.NewClient(&http.Client{Transport: itr})
