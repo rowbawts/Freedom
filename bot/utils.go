@@ -23,8 +23,8 @@ var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(
 var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
 
-func initGitHubClient() {
-	log.Println("Initializing......")
+func initGitHubClient(v string) {
+	log.Println("Initializing......", v)
 
 	if privateKey != "" {
 		log.Println("Private key loaded from env!")
