@@ -221,7 +221,9 @@ func processPullRequestEvent(event *github.PullRequestEvent) {
 		if err != nil {
 			log.Println("Error creating comment:", err)
 		}
-	} else if event.GetAction() == "merged" {
+	} else if event.Action != nil && *event.Action == "closed" && event.PullRequest.Merged != nil && *event.PullRequest.Merged {
+		log.Println(approvals)
 		delete(approvals, prNumber)
+		log.Println(approvals)
 	}
 }
