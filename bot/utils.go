@@ -177,10 +177,11 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			}
 
 			return
-		} else {
-			commentText := "Votes: (#{reactionCount})/(#{reactionCountGoal})"
-			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(len(approvals)), 1)
-			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
+		}
+
+		if approvals[eventSender] > 1 {
+			commentText := "@(#{commentAuthor}) your vote has already been counted :x:"
+			commentText = strings.Replace(commentText, "(#{commentAuthor})", eventSender, 1)
 
 			// Respond with a comment
 			comment := &github.IssueComment{
@@ -191,11 +192,10 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			if err != nil {
 				log.Println("Error creating comment:", err)
 			}
-		}
-
-		if approvals[eventSender] > 1 {
-			commentText := "@(#{commentAuthor}) your vote has already been counted :x:"
-			commentText = strings.Replace(commentText, "(#{commentAuthor})", eventSender, 1)
+		} else {
+			commentText := "@(#{commentAuthor}) voted! :tada:\n" + "Votes: (#{reactionCount})/(#{reactionCountGoal})"
+			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(len(approvals)), 1)
+			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
 
 			// Respond with a comment
 			comment := &github.IssueComment{
