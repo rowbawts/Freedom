@@ -163,7 +163,6 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 					return
 				}
-				log.Println(approvals)
 			}
 		}
 
@@ -224,7 +223,5 @@ func processPullRequestEvent(event *github.PullRequestEvent) {
 		}
 	} else if event.GetAction() == "merged" {
 		delete(approvals, prNumber)
-		log.Println(approvals)
-		log.Println("Pull request #", prNumber, "removed from approval list due to merge!")
 	}
 }
