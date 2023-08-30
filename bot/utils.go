@@ -23,6 +23,8 @@ var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(
 var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
 
+var approvals = map[int]string{}
+
 func initGitHubClient(v string) {
 	log.Println("Initializing......", v)
 
@@ -125,12 +127,11 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	prNumber := event.GetIssue().GetNumber()
 	reactionCount := 0
 	reactionCountGoal := 5
-	approvals := map[int]string{}
 
 	if event.GetIssue().IsPullRequest() {
 		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
 		if err != nil {
-			log.Println("Error fetching reactions:", err)
+			log.Println("Error fetching comments:", err)
 			return
 		}
 
@@ -162,6 +163,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 					return
 				}
+				log.Println(approvals)
 			}
 		}
 
@@ -181,11 +183,11 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 				log.Println("Error creating comment:", err)
 			}
 
-			_, _, err = client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions", merge)
+			_, _, err = client.PullRequests.Merge(ctx, owner, repo, prNumber, "Merging based on reactions!", merge)
 			if err != nil {
 				log.Println("Error merging pull request:", err)
 			} else {
-				log.Println("Pull request #", prNumber, "merged successfully")
+				log.Println("Pull request #", prNumber, "merged successfully!")
 			}
 
 			return
@@ -208,6 +210,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 }
 
 func processPullRequestEvent(event *github.PullRequestEvent) {
+	prNumber := event.GetPullRequest().GetNumber()
+
 	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
 		// Respond with a comment
 		comment := &github.IssueComment{
@@ -218,5 +222,8 @@ func processPullRequestEvent(event *github.PullRequestEvent) {
 		if err != nil {
 			log.Println("Error creating comment:", err)
 		}
+	} else if event.GetAction() == "merged" {
+		delete(approvals, prNumber)
+		log.Println("Pull request #", prNumber, "removed from approval list due to merge!")
 	}
 }
