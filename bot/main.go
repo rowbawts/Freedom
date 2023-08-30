@@ -1,6 +1,6 @@
 package main
 
-var version = "v0.01"
+var version = "v0.02"
 
 func main() {
 	initGitHubClient(version)
