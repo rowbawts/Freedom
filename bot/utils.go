@@ -23,8 +23,6 @@ var itr, _ = ghinstallation.New(http.DefaultTransport, 381312, 41105280, []byte(
 var client = github.NewClient(&http.Client{Transport: itr})
 var ctx = context.Background()
 
-var approvals = map[int]string{}
-
 func initGitHubClient(v string) {
 	log.Println("Initializing......", v)
 
@@ -85,11 +83,15 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		processIssuesEvent(event)
 		break
 	case *github.IssueCommentEvent:
-		if !strings.Contains(event.GetComment().GetUser().GetLogin(), "bot") {
+		eventLogin := event.GetComment().GetUser().GetLogin()
+		commentBody := event.GetComment().GetBody()
+
+		if !strings.Contains(eventLogin, "bot") && strings.Contains(commentBody, "+1") {
 			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
 		}
+
 		break
 	case *github.PullRequestEvent:
 		log.Println("Received Pull Request Event: processing now!")
@@ -125,8 +127,10 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 	owner := event.GetRepo().GetOwner().GetLogin()
 	repo := event.GetRepo().GetName()
 	prNumber := event.GetIssue().GetNumber()
-	reactionCount := 0
+	eventSender := event.GetSender().GetLogin()
+
 	reactionCountGoal := 5
+	approvals := map[string]int{}
 
 	if event.GetIssue().IsPullRequest() {
 		comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
@@ -139,34 +143,17 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		for _, comment := range comments {
 			commentAuthor := comment.GetUser().GetLogin()
 
-			if strings.Contains(comment.GetBody(), "+1") && !strings.Contains(commentAuthor, "bot") {
-				value, exists := approvals[prNumber]
-				if exists && !strings.Contains(value, commentAuthor) {
-					reactionCount++
-					approvals[prNumber] = commentAuthor
-				} else if !exists {
-					reactionCount++
-					approvals[prNumber] = commentAuthor
+			if !strings.Contains(commentAuthor, "bot") {
+				_, exists := approvals[commentAuthor]
+				if !exists {
+					approvals[commentAuthor] = 1
 				} else {
-					commentText := "@(#{commentAuthor}) your vote has already been counted :x:"
-					commentText = strings.Replace(commentText, "(#{commentAuthor})", commentAuthor, 1)
-
-					// Respond with a comment
-					comment := &github.IssueComment{
-						Body: github.String(commentText),
-					}
-
-					_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
-					if err != nil {
-						log.Println("Error creating comment:", err)
-					}
-
-					return
+					approvals[commentAuthor]++
 				}
 			}
 		}
 
-		if reactionCount >= reactionCountGoal {
+		if len(approvals) >= reactionCountGoal {
 			// Merge the pull request
 			merge := &github.PullRequestOptions{
 				MergeMethod: "merge", // Change this as needed
@@ -192,8 +179,23 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			return
 		} else {
 			commentText := "Votes: (#{reactionCount})/(#{reactionCountGoal})"
-			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(reactionCount), 1)
+			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(len(approvals)), 1)
 			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
+
+			// Respond with a comment
+			comment := &github.IssueComment{
+				Body: github.String(commentText),
+			}
+
+			_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+			if err != nil {
+				log.Println("Error creating comment:", err)
+			}
+		}
+
+		if approvals[eventSender] > 1 {
+			commentText := "@(#{commentAuthor}) your vote has already been counted :x:"
+			commentText = strings.Replace(commentText, "(#{commentAuthor})", eventSender, 1)
 
 			// Respond with a comment
 			comment := &github.IssueComment{
@@ -209,6 +211,8 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 }
 
 func processPullRequestEvent(event *github.PullRequestEvent) {
+	owner := event.GetRepo().GetOwner().GetLogin()
+	repo := event.GetRepo().GetName()
 	prNumber := event.GetPullRequest().GetNumber()
 
 	if event.GetAction() == "opened" || event.GetAction() == "reopened" {
@@ -217,11 +221,9 @@ func processPullRequestEvent(event *github.PullRequestEvent) {
 			Body: github.String("Comment on this PR with :+1: to vote for getting it merged!"),
 		}
 
-		_, _, err := client.Issues.CreateComment(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), event.GetPullRequest().GetNumber(), comment)
+		_, _, err := client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
 		if err != nil {
 			log.Println("Error creating comment:", err)
 		}
-	} else if event.Action != nil && *event.Action == "closed" && event.PullRequest.Merged != nil && *event.PullRequest.Merged {
-		delete(approvals, prNumber)
 	}
 }
