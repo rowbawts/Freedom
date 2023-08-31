@@ -99,6 +99,8 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received Pull Request Event: processing now!")
 		processPullRequestEvent(event)
 		break
+	case *github.StarEvent:
+		log.Println("Someone starred us, we're a star!")
 	default:
 		log.Println("Received Unhandled Event!")
 		break
