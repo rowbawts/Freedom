@@ -88,7 +88,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("User type:", userType, "Comment body:", commentBody)
 
-		if !strings.Contains(userType, "bot") && strings.Contains(commentBody, "+1") {
+		if !strings.Contains(userType, "bot") && (strings.Contains(commentBody, "+1") || strings.Contains(commentBody, "👍")) {
 			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
