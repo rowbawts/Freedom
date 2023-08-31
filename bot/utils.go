@@ -86,7 +86,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		eventLogin := event.GetComment().GetUser().GetLogin()
 		commentBody := event.GetComment().GetBody()
 
-		if !strings.Contains(eventLogin, "bot") && strings.Contains(commentBody, "+1") {
+		if !strings.Contains(eventLogin, "bot") && strings.Contains(commentBody, ":+1:") {
 			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
@@ -142,8 +142,9 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
 			commentAuthor := comment.GetUser().GetLogin()
+			commentBody := comment.GetBody()
 
-			if !strings.Contains(commentAuthor, "bot") {
+			if !strings.Contains(commentAuthor, "bot") && strings.Contains(commentBody, ":+1:") {
 				_, exists := approvals[commentAuthor]
 				if !exists {
 					approvals[commentAuthor] = 1
@@ -194,6 +195,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			}
 		} else {
 			commentText := "@(#{commentAuthor}) voted! :tada:\n" + "Votes: (#{reactionCount})/(#{reactionCountGoal})"
+			commentText = strings.Replace(commentText, "(#{commentAuthor})", eventSender, 1)
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(len(approvals)), 1)
 			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
 
