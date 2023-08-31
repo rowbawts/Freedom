@@ -147,7 +147,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			commentAuthor := comment.GetUser().GetLogin()
 			commentBody := comment.GetBody()
 
-			if !strings.Contains(userType, "bot") && strings.Contains(commentBody, "+1") {
+			if !strings.Contains(userType, "bot") && (strings.Contains(commentBody, "+1") || strings.Contains(commentBody, "👍")) {
 				_, exists := approvals[commentAuthor]
 				if !exists {
 					approvals[commentAuthor] = 1
