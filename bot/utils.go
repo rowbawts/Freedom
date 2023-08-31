@@ -88,7 +88,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Println("User type:", userType, "Comment body:", commentBody)
 
-		if !strings.Contains(userType, "bot") && strings.Contains(commentBody, ":+1:") {
+		if !strings.Contains(userType, "bot") && strings.Contains(commentBody, "+1") {
 			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
@@ -147,7 +147,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			commentAuthor := comment.GetUser().GetLogin()
 			commentBody := comment.GetBody()
 
-			if !strings.Contains(userType, "bot") && strings.Contains(commentBody, ":+1:") {
+			if !strings.Contains(userType, "bot") && strings.Contains(commentBody, "+1") {
 				_, exists := approvals[commentAuthor]
 				if !exists {
 					approvals[commentAuthor] = 1
