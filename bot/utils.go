@@ -195,6 +195,7 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 			}
 		} else {
 			commentText := "@(#{commentAuthor}) voted! :tada:\n" + "Votes: (#{reactionCount})/(#{reactionCountGoal})"
+			commentText = strings.Replace(commentText, "(#{commentAuthor})", eventSender, 1)
 			commentText = strings.Replace(commentText, "(#{reactionCount})", strconv.Itoa(len(approvals)), 1)
 			commentText = strings.Replace(commentText, "(#{reactionCountGoal})", strconv.Itoa(reactionCountGoal), 1)
 
