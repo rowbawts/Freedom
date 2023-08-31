@@ -83,10 +83,10 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		processIssuesEvent(event)
 		break
 	case *github.IssueCommentEvent:
-		eventLogin := event.GetComment().GetUser().GetLogin()
+		userType := strings.ToLower(event.GetComment().GetUser().GetType())
 		commentBody := event.GetComment().GetBody()
 
-		if !strings.Contains(eventLogin, "bot") && strings.Contains(commentBody, ":+1:") {
+		if !strings.Contains(userType, "bot") && strings.Contains(commentBody, ":+1:") {
 			log.Println("Received Issue Comment Event: processing now!")
 			processIssueCommentEvent(event)
 			break
@@ -141,10 +141,11 @@ func processIssueCommentEvent(event *github.IssueCommentEvent) {
 
 		// Check if there are thumbs up (:+1:) reactions
 		for _, comment := range comments {
+			userType := strings.ToLower(event.GetComment().GetUser().GetType())
 			commentAuthor := comment.GetUser().GetLogin()
 			commentBody := comment.GetBody()
 
-			if !strings.Contains(commentAuthor, "bot") && strings.Contains(commentBody, ":+1:") {
+			if !strings.Contains(userType, "bot") && strings.Contains(commentBody, ":+1:") {
 				_, exists := approvals[commentAuthor]
 				if !exists {
 					approvals[commentAuthor] = 1
